@@ -6,6 +6,12 @@
     <title>Register</title>
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // bloquer l'accès si pas connecté
+        if (!localStorage.getItem("token")) {
+            window.location.href = "/login.html";
+        }
+    </script>
 </head>
 
 <body class="min-h-screen bg-gray-100 text-gray-900 antialiased dark:bg-gray-900 dark:text-gray-100">
