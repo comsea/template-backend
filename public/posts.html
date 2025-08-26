@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Articles</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 16px;
+        }
+
+        .card {
+            border: 1px solid #ddd;
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .row {
+            display: flex;
+            gap: 8px;
+            margin: 8px 0;
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="row" style="justify-content:space-between; align-items:center;">
+        <h1>Articles</h1>
+        <nav class="row">
+            <a href="/login.html">Login</a>
+            <a href="/register.html">Register</a>
+            <button id="logout">Logout</button>
+        </nav>
+    </header>
+
+    <section>
+        <h2>Créer un article</h2>
+        <form id="create-form">
+            <input name="title" placeholder="Titre" required />
+            <input type="file" name="image" accept="image/*" />
+            <textarea name="content" placeholder="Contenu" required></textarea>
+            <button type="submit">Publier</button>
+        </form>
+        <p id="create-msg"></p>
+    </section>
+
+    <hr />
+
+    <section>
+        <h2>Publications</h2>
+        <div id="list" class="grid"></div>
+    </section>
+
+    <script>
+        const list = document.getElementById("list");
+        const token = localStorage.getItem("token");
+        const createForm = document.getElementById("create-form");
+        const createMsg = document.getElementById("create-msg");
+
+        document.getElementById("logout").onclick = () => {
+            localStorage.removeItem("token");
+            location.reload();
+        };
+
+        createForm.style.display = token ? "block" : "none";
+
+        async function load() {
+            const res = await fetch("/articles");
+            const json = await res.json();
+            if (Array.isArray(json.data)) render(json.data);
+        }
+
+        function render(articles) {
+            list.innerHTML = "";
+            articles
+                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                .forEach(a => {
+                    const card = document.createElement("div");
+                    card.className = "card";
+                    card.innerHTML = `
+                <h3>${escapeHtml(a.title)}</h3>
+                ${a.image ? `<img src="${escapeAttr(a.image)}" alt="">` : ""}
+                <p>${escapeHtml(a.content ?? "")}</p>
+                <small>${new Date(a.createdAt).toLocaleString()}</small>
+                ${token ? `
+                  <div class="row">
+                    <button data-id="${a.id}" class="edit">Edit</button>
+                    <button data-id="${a.id}" class="del">Delete</button>
+                  </div>` : ``}
+              `;
+                    list.appendChild(card);
+                });
+
+            list.querySelectorAll(".del").forEach(btn => {
+                btn.addEventListener("click", async () => {
+                    if (!confirm("Supprimer cet article ?")) return;
+                    const id = btn.getAttribute("data-id");
+                    const res = await fetch(`/articles/${id}`, {
+                        method: "DELETE",
+                        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+                    });
+                    if (res.ok) load();
+                });
+            });
+
+            list.querySelectorAll(".edit").forEach(btn => {
+                btn.addEventListener("click", async () => {
+                    const id = btn.getAttribute("data-id");
+                    const title = prompt("Nouveau titre ? (laisser vide pour ne pas changer)");
+                    const content = prompt("Nouveau contenu ? (laisser vide pour ne pas changer)");
+                    // Pour changer l'image à l'édition, tu peux faire un petit formulaire modal.
+                    const body = JSON.stringify({ ...(title ? { title } : {}), ...(content ? { content } : {}) });
+                    const res = await fetch(`/articles/${id}`, {
+                        method: "PUT",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${localStorage.getItem("token")}`
+                        },
+                        body
+                    });
+                    if (res.ok) load();
+                });
+            });
+        }
+
+        createForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            createMsg.textContent = "Envoi...";
+            try {
+                const formData = new FormData(createForm); // inclut le fichier
+                const res = await fetch("/articles", {
+                    method: "POST",
+                    headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }, // NE PAS mettre Content-Type
+                    body: formData,
+                });
+                const json = await res.json();
+                if (!res.ok) throw new Error(json.error || "Erreur");
+                createMsg.textContent = "Créé ✅";
+                createForm.reset();
+                load(); // recharger la liste
+            } catch (err) {
+                createMsg.textContent = err.message;
+            }
+        });
+
+        function escapeHtml(s = "") { return s.replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m])) }
+        function escapeAttr(s = "") { return s.replace(/"/g, "&quot;") }
+
+        load();
+    </script>
+</body>
+
+</html>
