@@ -5,6 +5,13 @@
     <meta charset="utf-8" />
     <title>Articles</title>
     <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <!-- jQuery (requis) -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+    <!-- Trumbowyg -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/trumbowyg@2.28.0/dist/ui/trumbowyg.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/trumbowyg@2.28.0/dist/trumbowyg.min.js"></script>
+
     <style>
         .grid {
             display: grid;
@@ -44,15 +51,16 @@
 
     <section>
         <h2>Créer un article</h2>
-        <form id="create-form">
+        <form id="create-form" enctype="multipart/form-data">
             <input name="title" placeholder="Titre" required />
             <input type="file" name="image" accept="image/*" />
-            <textarea name="content" placeholder="Contenu" required></textarea>
+            <textarea id="editor" name="content"></textarea>
             <button type="submit">Publier</button>
         </form>
         <p id="create-msg"></p>
     </section>
 
+    <script src="/vendor/quill/quill.min.js"></script>
     <hr />
 
     <section>
@@ -61,6 +69,44 @@
     </section>
 
     <script>
+        $('#editor').trumbowyg({
+            btns: [
+                ['bold', 'italic', 'underline'],
+                ['fontsize']   // taille de police
+            ],
+            autogrow: true
+        });
+
+        function sanitizeHtml(html) {
+            const allowedTags = new Set(["P", "BR", "B", "STRONG", "I", "EM", "U", "SPAN"]);
+            const tpl = document.createElement("template");
+            tpl.innerHTML = html || "";
+
+            (function walk(node) {
+                if (node.nodeType === 1) {
+                    const el = node;
+                    if (!allowedTags.has(el.tagName)) {
+                        const parent = el.parentNode;
+                        while (el.firstChild) parent.insertBefore(el.firstChild, el);
+                        parent.removeChild(el);
+                        walk(parent);
+                        return;
+                    }
+                    // supprime tous les attributs
+                    for (const a of Array.from(el.attributes)) el.removeAttribute(a.name);
+                    // autorise uniquement font-size sur <span>
+                    if (el.tagName === "SPAN") {
+                        const s = el.style.fontSize || "";
+                        el.removeAttribute("style");
+                        if (/^\d+(\.\d+)?(px|rem|em|%)$/.test(s)) el.style.fontSize = s;
+                    }
+                }
+                for (const c of Array.from(node.childNodes)) walk(c);
+            })(tpl.content);
+
+            return tpl.innerHTML;
+        }
+
         const list = document.getElementById("list");
         const token = localStorage.getItem("token");
         const createForm = document.getElementById("create-form");
@@ -86,17 +132,20 @@
                 .forEach(a => {
                     const card = document.createElement("div");
                     card.className = "card";
+                    const safe = sanitizeHtml(a.content ?? "");
+
                     card.innerHTML = `
-                <h3>${escapeHtml(a.title)}</h3>
-                ${a.image ? `<img src="${escapeAttr(a.image)}" alt="">` : ""}
-                <p>${escapeHtml(a.content ?? "")}</p>
-                <small>${new Date(a.createdAt).toLocaleString()}</small>
-                ${token ? `
-                  <div class="row">
-                    <button data-id="${a.id}" class="edit">Edit</button>
-                    <button data-id="${a.id}" class="del">Delete</button>
-                  </div>` : ``}
-              `;
+        <h3>${escapeHtml(a.title)}</h3>
+        ${a.image ? `<img src="${escapeAttr(a.image)}" alt="">` : ""}
+        <div class="content"></div>
+        <small>${new Date(a.createdAt).toLocaleString()}</small>
+        ${token ? `
+          <div class="row">
+            <button data-id="${a.id}" class="edit">Edit</button>
+            <button data-id="${a.id}" class="del">Delete</button>
+          </div>` : ``}
+      `;
+                    card.querySelector(".content").innerHTML = safe;
                     list.appendChild(card);
                 });
 
@@ -136,21 +185,28 @@
             e.preventDefault();
             createMsg.textContent = "Envoi...";
             try {
-                const formData = new FormData(createForm); // inclut le fichier
+                const formData = new FormData(createForm);
+
+                // ⚠️ Trumbowyg stocke le HTML directement dans le <textarea>
+                formData.set("content", $('#editor').trumbowyg('html'));
+
                 const res = await fetch("/articles", {
                     method: "POST",
-                    headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }, // NE PAS mettre Content-Type
-                    body: formData,
+                    headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+                    body: formData
                 });
                 const json = await res.json();
                 if (!res.ok) throw new Error(json.error || "Erreur");
+
                 createMsg.textContent = "Créé ✅";
                 createForm.reset();
-                load(); // recharger la liste
+                $('#editor').trumbowyg('empty');
+                load();
             } catch (err) {
                 createMsg.textContent = err.message;
             }
         });
+
 
         function escapeHtml(s = "") { return s.replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m])) }
         function escapeAttr(s = "") { return s.replace(/"/g, "&quot;") }
