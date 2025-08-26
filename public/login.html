@@ -5,25 +5,126 @@
     <meta charset="utf-8" />
     <title>Login</title>
     <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <!-- Tailwind CSS via CDN (idéal pour démarrer rapidement) -->
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body>
-    <h1>Connexion</h1>
-    <form id="login-form">
-        <label>Email <input type="email" name="email" required /></label><br />
-        <label>Mot de passe <input type="password" name="password" required /></label><br />
-        <button type="submit">Se connecter</button>
-    </form>
-    <p id="msg"></p>
-    <p>Pas de compte ? <a href="/register.html">Créer un compte</a></p>
+<body class="min-h-screen bg-gray-100 text-gray-900 antialiased dark:bg-gray-900 dark:text-gray-100">
+    <main class="min-h-screen flex items-center justify-center px-4">
+        <div class="w-full max-w-md">
+            <!-- Titre -->
+            <div class="text-center mb-8">
+                <div
+                    class="mx-auto h-12 w-12 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center mb-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600 dark:text-gray-300"
+                        viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M12 3a9 9 0 100 18 9 9 0 000-18Zm1 5a1 1 0 10-2 0v4a1 1 0 00.293.707l2.5 2.5a1 1 0 101.414-1.414L13 11.586V8Z" />
+                    </svg>
+                </div>
+                <h1 class="text-2xl font-semibold">Connexion</h1>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Accédez à votre espace</p>
+            </div>
+
+            <!-- Carte -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 border border-gray-200 dark:border-gray-700">
+                <form id="login-form" class="space-y-5" novalidate>
+                    <!-- Email -->
+                    <div>
+                        <label class="block text-sm font-medium mb-1" for="email">Email</label>
+                        <input id="email" name="email" type="email" autocomplete="email" required
+                            class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 outline-none focus:ring-2 focus:ring-gray-400"
+                            placeholder="ton.email@exemple.com" />
+                    </div>
+
+                    <!-- Password -->
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="text-sm font-medium" for="password">Mot de passe</label>
+                            <button id="toggle-pass" type="button"
+                                class="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                                Afficher
+                            </button>
+                        </div>
+                        <div class="relative">
+                            <input id="password" name="password" type="password" autocomplete="current-password"
+                                required minlength="6"
+                                class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 pr-10 outline-none focus:ring-2 focus:ring-gray-400"
+                                placeholder="********" />
+                            <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400"
+                                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="space-y-3">
+                        <button id="submit-btn" type="submit"
+                            class="w-full inline-flex items-center justify-center gap-2 rounded-md bg-gray-900 text-white px-4 py-2.5 font-medium hover:bg-gray-700 transition disabled:opacity-60 disabled:cursor-not-allowed">
+                            <svg id="spinner" class="hidden h-5 w-5 animate-spin" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                    stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z">
+                                </path>
+                            </svg>
+                            <span id="btn-text">Se connecter</span>
+                        </button>
+
+                        <p class="text-center text-sm">
+                            Pas de compte ?
+                            <a href="/register.html"
+                                class="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 font-medium">Créer
+                                un compte</a>
+                        </p>
+                    </div>
+
+                    <!-- Message -->
+                    <p id="msg" class="text-sm h-5 text-center"></p>
+                </form>
+            </div>
+
+            <!-- Lien Articles -->
+            <p class="text-center text-sm mt-6">
+                <a href="/posts.html"
+                    class="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100">Voir les
+                    articles</a>
+            </p>
+        </div>
+    </main>
 
     <script>
         const form = document.getElementById("login-form");
         const msg = document.getElementById("msg");
+        const submitBtn = document.getElementById("submit-btn");
+        const spinner = document.getElementById("spinner");
+        const btnText = document.getElementById("btn-text");
+        const togglePass = document.getElementById("toggle-pass");
+        const passwordEl = document.getElementById("password");
+
+        // Toggle mot de passe
+        togglePass.addEventListener("click", () => {
+            const isPwd = passwordEl.type === "password";
+            passwordEl.type = isPwd ? "text" : "password";
+            togglePass.textContent = isPwd ? "Masquer" : "Afficher";
+            passwordEl.focus();
+        });
+
+        function setLoading(isLoading) {
+            submitBtn.disabled = isLoading;
+            spinner.classList.toggle("hidden", !isLoading);
+            btnText.textContent = isLoading ? "Connexion..." : "Se connecter";
+        }
 
         form.addEventListener("submit", async (e) => {
             e.preventDefault();
-            msg.textContent = "Connexion...";
+            msg.textContent = "";
+            setLoading(true);
+
             const data = Object.fromEntries(new FormData(form));
             try {
                 const res = await fetch("/auth/login", {
@@ -32,12 +133,19 @@
                     body: JSON.stringify(data),
                 });
                 const json = await res.json();
-                if (!res.ok) throw new Error(json.error || "Erreur");
+                if (!res.ok) throw new Error(json.error || "Email ou mot de passe incorrect");
+
                 localStorage.setItem("token", json.token);
-                msg.textContent = "Connecté ! Redirection...";
+                // feedback success
+                msg.textContent = "Connecté ✅ redirection...";
+                msg.className = "text-sm text-emerald-600 text-center";
+                // redirection
                 location.href = "/posts.html";
             } catch (err) {
-                msg.textContent = err.message;
+                msg.textContent = err.message || "Erreur inconnue";
+                msg.className = "text-sm text-rose-600 text-center";
+            } finally {
+                setLoading(false);
             }
         });
     </script>

@@ -5,83 +5,88 @@
     <meta charset="utf-8" />
     <title>Articles</title>
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <!-- jQuery (requis) -->
+
+    <!-- Tailwind CSS (palette noir/blanc/gris) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- jQuery (requis par Trumbowyg) -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
-    <!-- Trumbowyg -->
+    <!-- Trumbowyg (WYSIWYG) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/trumbowyg@2.28.0/dist/ui/trumbowyg.min.css">
     <script src="https://cdn.jsdelivr.net/npm/trumbowyg@2.28.0/dist/trumbowyg.min.js"></script>
-
-    <style>
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-            gap: 16px;
-        }
-
-        .card {
-            border: 1px solid #ddd;
-            padding: 12px;
-            border-radius: 8px;
-        }
-
-        .row {
-            display: flex;
-            gap: 8px;
-            margin: 8px 0;
-        }
-
-        img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 6px;
-        }
-    </style>
 </head>
 
-<body>
-    <header class="row" style="justify-content:space-between; align-items:center;">
-        <h1>Articles</h1>
-        <nav class="row">
-            <a href="/login.html">Login</a>
-            <a href="/register.html">Register</a>
-            <button id="logout">Logout</button>
-        </nav>
+<body class="min-h-screen bg-gray-100 text-gray-900 antialiased dark:bg-gray-900 dark:text-gray-100">
+    <!-- Header -->
+    <header class="border-b border-gray-200 dark:border-gray-700 bg-white/60 dark:bg-gray-900/60 backdrop-blur">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
+            <h1 class="text-xl font-semibold">Articles</h1>
+            <nav class="ml-auto flex items-center gap-3">
+                <div id="authLinks" class="flex items-center gap-3">
+                    <a href="/login.html"
+                        class="text-sm text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100">Login</a>
+                    <a href="/register.html"
+                        class="text-sm text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100">Register</a>
+                </div>
+                <button id="logout"
+                    class="text-sm px-3 py-1.5 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-800">
+                    Logout
+                </button>
+            </nav>
+        </div>
     </header>
 
-    <section>
-        <h2>Créer un article</h2>
-        <form id="create-form" enctype="multipart/form-data">
-            <input name="title" placeholder="Titre" required />
-            <input type="file" name="image" accept="image/*" />
-            <textarea id="editor" name="content"></textarea>
-            <button type="submit">Publier</button>
-        </form>
-        <p id="create-msg"></p>
-    </section>
+    <main class="max-w-6xl mx-auto px-4 py-6">
+        <!-- Carte création -->
+        <section class="mb-8">
+            <h2 class="text-lg font-medium mb-3">Créer un article</h2>
+            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow p-4">
+                <form id="create-form" enctype="multipart/form-data" class="grid gap-3">
+                    <input name="title" placeholder="Titre" required
+                        class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 outline-none focus:ring-2 focus:ring-gray-400" />
 
-    <script src="/vendor/quill/quill.min.js"></script>
-    <hr />
+                    <input type="file" name="image" accept="image/*" class="w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-gray-900 file:text-white file:px-3 file:py-2 hover:file:bg-gray-700
+                   border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900" />
 
-    <section>
-        <h2>Publications</h2>
-        <div id="list" class="grid"></div>
-    </section>
+                    <!-- Trumbowyg textarea -->
+                    <textarea id="editor" name="content"></textarea>
+
+                    <div class="flex items-center gap-3">
+                        <button type="submit"
+                            class="inline-flex items-center justify-center gap-2 rounded-md bg-gray-900 text-white px-4 py-2.5 font-medium hover:bg-gray-700 transition">
+                            Publier
+                        </button>
+                        <p id="create-msg" class="text-sm text-gray-600 dark:text-gray-400"></p>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <hr class="border-gray-200 dark:border-gray-700 mb-6" />
+
+        <!-- Grille publications -->
+        <section>
+            <h2 class="text-lg font-medium mb-3">Publications</h2>
+            <div id="list" class="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-4"></div>
+        </section>
+    </main>
 
     <script>
+        // Init WYSIWYG limité : gras / italique / souligné / taille
         $('#editor').trumbowyg({
             btns: [
                 ['bold', 'italic', 'underline'],
-                ['fontsize']   // taille de police
+                ['fontsize']
             ],
             autogrow: true
         });
 
+        // --- Sanitizer simple (whitelist) ---
         function sanitizeHtml(html) {
             const allowedTags = new Set(["P", "BR", "B", "STRONG", "I", "EM", "U", "SPAN"]);
             const tpl = document.createElement("template");
             tpl.innerHTML = html || "";
-
             (function walk(node) {
                 if (node.nodeType === 1) {
                     const el = node;
@@ -92,9 +97,8 @@
                         walk(parent);
                         return;
                     }
-                    // supprime tous les attributs
+                    // retirer tous attributs, puis ne garder que font-size sur <span>
                     for (const a of Array.from(el.attributes)) el.removeAttribute(a.name);
-                    // autorise uniquement font-size sur <span>
                     if (el.tagName === "SPAN") {
                         const s = el.style.fontSize || "";
                         el.removeAttribute("style");
@@ -103,22 +107,34 @@
                 }
                 for (const c of Array.from(node.childNodes)) walk(c);
             })(tpl.content);
-
             return tpl.innerHTML;
         }
 
+        // --- Helpers ---
+        function escapeHtml(s = "") { return s.replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m])) }
+        function escapeAttr(s = "") { return s.replace(/"/g, "&quot;") }
+
+        // --- State / UI refs ---
         const list = document.getElementById("list");
         const token = localStorage.getItem("token");
         const createForm = document.getElementById("create-form");
+        const authLinks = document.getElementById("authLinks")
+        const logoutBtn = document.getElementById("logout")
         const createMsg = document.getElementById("create-msg");
 
+        // Montrer le formulaire seulement si connecté
+        createForm.style.display = token ? "grid" : "none";
+        authLinks.style.display = token ? "none" : "flex";
+        logoutBtn.style.display = token ? "inline-flex" : "none";
+
+
+        // Logout
         document.getElementById("logout").onclick = () => {
             localStorage.removeItem("token");
             location.reload();
         };
 
-        createForm.style.display = token ? "block" : "none";
-
+        // Charger les articles
         async function load() {
             const res = await fetch("/articles");
             const json = await res.json();
@@ -130,25 +146,28 @@
             articles
                 .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
                 .forEach(a => {
-                    const card = document.createElement("div");
-                    card.className = "card";
+                    const card = document.createElement("article");
+                    card.className = "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow p-4";
                     const safe = sanitizeHtml(a.content ?? "");
 
                     card.innerHTML = `
-        <h3>${escapeHtml(a.title)}</h3>
-        ${a.image ? `<img src="${escapeAttr(a.image)}" alt="">` : ""}
-        <div class="content"></div>
-        <small>${new Date(a.createdAt).toLocaleString()}</small>
-        ${token ? `
-          <div class="row">
-            <button data-id="${a.id}" class="edit">Edit</button>
-            <button data-id="${a.id}" class="del">Delete</button>
-          </div>` : ``}
-      `;
+            <h3 class="font-semibold mb-2">${escapeHtml(a.title)}</h3>
+            ${a.image ? `<img src="${escapeAttr(a.image)}" alt="" class="mb-3 rounded-md">` : ""}
+            <div class="prose prose-sm max-w-none dark:prose-invert mb-3 content"></div>
+            <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+              <span>${new Date(a.createdAt).toLocaleString()}</span>
+              ${token ? `
+                <div class="flex items-center gap-2">
+                  <button data-id="${a.id}" class="px-2 py-1 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700">Edit</button>
+                  <button data-id="${a.id}" class="del px-2 py-1 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700">Delete</button>
+                </div>` : ``}
+            </div>
+          `;
                     card.querySelector(".content").innerHTML = safe;
                     list.appendChild(card);
                 });
 
+            // Delete
             list.querySelectorAll(".del").forEach(btn => {
                 btn.addEventListener("click", async () => {
                     if (!confirm("Supprimer cet article ?")) return;
@@ -161,12 +180,12 @@
                 });
             });
 
-            list.querySelectorAll(".edit").forEach(btn => {
+            // Edit rapide (titre + contenu via prompt)
+            list.querySelectorAll("button:not(.del)").forEach(btn => {
                 btn.addEventListener("click", async () => {
                     const id = btn.getAttribute("data-id");
                     const title = prompt("Nouveau titre ? (laisser vide pour ne pas changer)");
-                    const content = prompt("Nouveau contenu ? (laisser vide pour ne pas changer)");
-                    // Pour changer l'image à l'édition, tu peux faire un petit formulaire modal.
+                    const content = prompt("Nouveau contenu (HTML) ? (laisser vide)");
                     const body = JSON.stringify({ ...(title ? { title } : {}), ...(content ? { content } : {}) });
                     const res = await fetch(`/articles/${id}`, {
                         method: "PUT",
@@ -181,19 +200,19 @@
             });
         }
 
+        // Créer un article
         createForm.addEventListener("submit", async (e) => {
             e.preventDefault();
             createMsg.textContent = "Envoi...";
             try {
-                const formData = new FormData(createForm);
-
-                // ⚠️ Trumbowyg stocke le HTML directement dans le <textarea>
-                formData.set("content", $('#editor').trumbowyg('html'));
+                const fd = new FormData(createForm);
+                // Trumbowyg met le HTML dans le textarea
+                fd.set("content", $('#editor').trumbowyg('html'));
 
                 const res = await fetch("/articles", {
                     method: "POST",
                     headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-                    body: formData
+                    body: fd
                 });
                 const json = await res.json();
                 if (!res.ok) throw new Error(json.error || "Erreur");
@@ -203,13 +222,9 @@
                 $('#editor').trumbowyg('empty');
                 load();
             } catch (err) {
-                createMsg.textContent = err.message;
+                createMsg.textContent = err.message || "Erreur";
             }
         });
-
-
-        function escapeHtml(s = "") { return s.replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m])) }
-        function escapeAttr(s = "") { return s.replace(/"/g, "&quot;") }
 
         load();
     </script>
